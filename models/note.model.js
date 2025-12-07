@@ -35,6 +35,6 @@ const notesSchema = new mongoose.Schema ({
 
 notesSchema.index({ title: 'text', content: 'text', category: 'text', tags: 'text' });
 
-const notes = mongoose.model("Notes", notesSchema);
+const notes = mongoose.model("note", notesSchema);
 
-module.exports = notes
+module.exports = notes;
