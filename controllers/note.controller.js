@@ -4,34 +4,13 @@ const noteModel = require("../models/note.model");
 // Create note
 const postNote = async (req, res, next) => {
     const noteSchema = Joi.object({
-        title : {
-            type : Joi.string()
-            .required()
-            .minLength(5)
-            .index()
-            .trim(),
-        },
+        title : Joi.string().required().min(5).trim(),
 
-        content : {
-            type : Joi.string()
-            .required()
-            .minLength(10)
-            .maxLength(250)
-            .index(),
-        },
+        content : Joi.string().required().min(10).max(250),
 
-        category : {
-            type : Joi.string()
-            .optional()
-            .enum()
-            .default(),
-        },
+        category : Joi.string().optional(),
 
-        tags : {
-            type : Joi.string()
-            .optional()
-            .default(),
-        },
+        tags : Joi.string().optional(),
     });
 
      const { error, value } = noteSchema.validate(req.body);
@@ -60,19 +39,17 @@ const getAllNote = async (req, res, next) => {
     const {limit = 10, page = 1} = req.query;
     const skip = (page -1) * limit;
     try {
-        const allNote = await noteModel.find({})
+        const allNote = await noteModel.find()
+              
         .sort({ createdAt: -1 })
             .limit(Number(limit))
             .skip(Number(skip));
-            
-        if (!allNote) {
-            return res.status(404).json({message : "Note cannot be found", error : error.message});
-        };
 
-        if (allNote) {
-            return res.status(200).json({message : "Notes are feteched"});
-            Data : allNote;
-        };
+            return res.status(200).json({
+      message: "Notes fetched",
+      data: allNote,
+  })
+
 
     } catch (error) {
         next (error);
@@ -88,8 +65,10 @@ const getNoteById = async (req, res, next) => {
         };
 
         if (singleNote) {
-            return res.satatus(200).json({message : "A note is feteched"});
-            Data : singleNote;
+            return res.status(200).json({message : "A note is fetched",
+                data: singleNote,
+            });
+            
         };
 
     } catch (error) {
@@ -97,45 +76,48 @@ const getNoteById = async (req, res, next) => {
     }
 };
 
+const getSearchNote = async (req, res, next) => {
+  const {search} = req.query
+
+  try {
+    const searchNote = await ArticleModel.find({ $text: { $search: search } });
+
+    return res.status(200).json({
+      message: "Notes fetched",
+      data: searchNote,
+  })
+  } catch (error) {
+   next(error);
+  }
+};
+
 // Update note
 const updateNoteById = async (req, res, next) => {
     const {error,value} = Joi.object({
-        title : {
-            type : Joi.string()
-            .required()
-            .minLength(5)
-            .index()
-            .trim(),
-        },
+        title : Joi.string().required().min(5).trim(),
 
-        content : {
-            type : Joi.string()
-            .required()
-            .minLength(10)
-            .maxLength(250)
-            .index(),
-        },
+        content : Joi.string().required().min(10).max(250),
 
-        category : {
-            type : Joi.string()
-            .optional()
-            .enum()
-            .default(),
-        },
+        category : Joi.string().optional(),
 
-        tags : {
-            type : Joi.string()
-            .optional()
-            .default(),
-        },
+        tags : Joi.string().optional(),
     }).validate(req.body);
 
     if (error) return res.status(400).json({ message: error.message });
     try {
-        const updateNote = await noteModel.findByIdAndUpdate(req.params.id);
+        const updateNote = await noteModel.findByIdAndUpdate(
+            req.params.id,
+            { ...value }, 
+    { 
+      new: true, 
+      runValidators: true,
+    }
+    );
         if (updateNote) {
-            return res.status(200).json({message : "Note has been updateNoted"});
-            Data : updateNote;
+            return res.status(200).json({message : "Note has been updated",  
+                Data : updateNote, 
+            });
+          
         };
 
     } catch (error) {
@@ -146,10 +128,10 @@ const deletetNoteById = async (req, res, next) => {
     try {
         const deleteNote = await noteModel.findByIdAndDelete(req.params.id);
          if (!deleteNote) {
-            return res.status(404).json({message : "You cannot delete note", error : error.message});
+            return res.status(404).json({message : "Note cannoy be deleted", error : error.message});
         };
         if (deleteNote) {
-            return res.status(200).json({message : "You have successfully deleted a note"});
+            return res.status(200).json({message : "You have successfully deleted the note"});
         };
 
     } catch (error) {
@@ -161,6 +143,7 @@ module.exports = {
     postNote,
     getAllNote,
     getNoteById,
+    getSearchNote,
     updateNoteById,
     deletetNoteById,
 };

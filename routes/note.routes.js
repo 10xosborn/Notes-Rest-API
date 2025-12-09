@@ -6,6 +6,7 @@ const {
     getNoteById,
     updateNoteById,
     deletetNoteById,
+    getSearchNote,
 } = require("../controllers/note.controller.js");
 
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post("/note", requireAuth, postNote);
 router.get("/note", requireAuth, getAllNote);
 router.get("/note/:id",requireAuth, getNoteById);
+router.get("/note", requireAuth, getSearchNote);
 router.put("/note/:id",requireAuth, updateNoteById);
 router.delete("/note/:id", requireAuth, deletetNoteById);
 
