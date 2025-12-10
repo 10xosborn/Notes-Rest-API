@@ -208,7 +208,3 @@ This is a learning project following production-ready best practices.
 ## 📄 License
 
 ISC
-
----
-
-**Built with ❤️ following enterprise-grade Node.js architecture**
