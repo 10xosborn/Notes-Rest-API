@@ -7,98 +7,103 @@ A production-ready REST API for managing notes with user authentication, built w
 - ✅ Create, Read, Update, Delete notes
 - ✅ Pagination and sorting
 - ✅ Full-text search
-- ✅ Category filtering
+- ✅ Category filtering (Work, Personal, Other)
 - ✅ Input validation with Joi
 - ✅ Centralized error handling
-- ✅ Production-ready architecture
+- ✅ User authentication with JWT
 
-## 🛠 Technology Stack
+## Tech Stack
 
 - **Runtime**: Node.js
 - **Framework**: Express.js
-- **Database**: MongoDB (with Mongoose ODM)
+- **Database**: MongoDB with Mongoose
 - **Validation**: Joi
-- **Logging**: Morgan
+- **Authentication**: JWT & Bcrypt
 - **Environment**: dotenv
 
 ## Project Structure
 
 ```
-NOTES REST API/
-│
-├── src/
-│   ├── config/
-│   │   └── db.js                 # MongoDB connection
-│   ├── controllers/
-│   │   └── note.controller.js    # Business logic
-│   ├── models/
-│   │   └── note.model.js         # Mongoose schema
-│   ├── routes/
-│   │   └── note.routes.js        # API routes
-│   ├── middleware/
-│   │   ├── validate.js           # Validation middleware
-│   │   └── errorHandler.js       # Error handling
-│   ├── validators/
-│   │   └── note.validation.js    # Joi schemas
-│   ├── utils/
-│   │   └── ApiError.js           # Custom error class
-│   └──app.js                     # Express app setup and server bootstrap
-│
-├── .env                          # Environment variables (create this!)
-├── .gitignore
-├── package.json
-└── README.md
+src/
+├── config/db.js
+├── controllers/
+│   ├── note.controller.js
+│   └── user.controller.js
+├── models/
+│   ├── note.model.js
+│   └── user.model.js
+├── routes/
+│   ├── note.routes.js
+│   └── user.route.js
+├── middleware/
+│   ├── validate.js
+│   ├── errorHandler.js
+│   └── requireAuth.js
+├── utils/ApiError.js
+└── app.js
 ```
 
 ## Installation
 
-### Prerequisites
-
-- Node.js (v14 or higher)
-- MongoDB Atlas account (or local MongoDB)
-- npm or yarn
-
-### Steps
-
-1. **Clone or navigate to the project directory**
-
-2. **Install dependencies**
+1. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Create environment file**
-   
-   Create a `.env` file in the root directory:
-   ```bash
-   cp .env.example .env
-   ```
-
-4. **Configure environment variables**
-   
-   Edit `.env` and add your MongoDB connection string:
+2. **Create `.env` file**
    ```env
    PORT=5000
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/notes-api?retryWrites=true&w=majority
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/notes-api
    NODE_ENV=development
+   JWT_SECRET=your_jwt_secret_key
    ```
 
-   **To get your MongoDB Atlas URI:**
-   - Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-   - Create a free cluster
-   - Click "Connect" → "Connect your application"
-   - Copy the connection string
-   - Replace `<username>` and `<password>` with your credentials
-
-5. **Start the development server**
+3. **Start server**
    ```bash
    npm run dev
    ```
 
-6. **For production**
-   ```bash
-   npm start
-   ```
+## Authentication
+
+### Register User
+```
+POST /sign-up
+```
+
+**Request:**
+```json
+{
+  "name": "Feose Chiki",
+  "email": "feose@example.com",
+  "password": "securePassword123"
+}
+```
+
+### Login User
+```
+POST /login
+```
+
+**Request:**
+```json
+{
+  "email": "feose@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "logged in",
+  "user": {
+    "_id": "507f1f77bcf86cd799439011",
+    "email": "feose@example.com",
+    "name": "Feose Chiki"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
 
 ## API Endpoints
 
@@ -107,198 +112,171 @@ NOTES REST API/
 GET /health
 ```
 
+### Notes (all require Authorization header with token)
+
+#### Create Note
+```
+POST /note
+Content-Type: application/json
+Authorization: Bearer <TOKEN>
+```
+
+**Request:**
+```json
+{
+  "title": "Project Meeting",
+  "content": "Discussed Q1 objectives and timeline for delivery",
+  "category": "Work",
+  "tags": "meeting,project,q1"
+}
+```
+
+#### Get All Notes with Pagination
+```
+GET /note?page=1&limit=10
+Authorization: Bearer <TOKEN>
+```
+
+**Query Parameters:**
+- `page` (optional, default: 1) — Page number
+- `limit` (optional, default: 10) — Items per page
+
+**Examples:**
+```bash
+# Get first page (10 items)
+curl -H "Authorization: Bearer <TOKEN>" \
+  http://localhost:5000/note
+
+# Get page 2 with 5 items per page
+curl -H "Authorization: Bearer <TOKEN>" \
+  "http://localhost:5000/note?page=2&limit=5"
+
+# Get page 3 with 20 items per page
+curl -H "Authorization: Bearer <TOKEN>" \
+  "http://localhost:5000/note?page=3&limit=20"
+```
+
 **Response:**
 ```json
 {
-  "success": true,
-  "message": "Server is running",
-  "timestamp": "2024-01-01T12:00:00.000Z"
-}
-```
-
-### Notes Endpoints (examples for search & pagination)
-
-Base route (requires Authorization header, middleware: requireAuth):
-- POST   /api/note          # Create a note
-- GET    /api/note          # Get all notes (supports pagination)
-- GET    /api/note/search   # Full-text search across title and content
-- GET    /api/note/:id      # Get a single note
-- PUT    /api/note/:id      # Update a note
-- DELETE /api/note/:id      # Delete a note
-
-Note: the controller sorts results by createdAt descending (newest first).
-
-#### Pagination (GET /api/note)
-Query params:
-- page (optional, default: 1) — page number
-- limit (optional, default: 10) — number of items per page
-
-Examples:
-```bash
-# Default (page 1, 10 items)
-curl -H "Authorization: Bearer <TOKEN>" \
-  http://localhost:5000/api/note
-
-# Page 2, 5 items per page
-curl -H "Authorization: Bearer <TOKEN>" \
-  "http://localhost:5000/api/note?page=2&limit=5"
-```
-
-Sample response:
-```json
-{
   "message": "Notes fetched",
   "data": [
     {
-      "_id": "62f1f77bcf86cd799439011",
-      "title": "Meeting Notes",
-      "content": "Discussed quarterly objectives...",
+      "_id": "507f1f77bcf86cd799439011",
+      "title": "Project Meeting",
+      "content": "Discussed Q1 objectives and timeline for delivery",
       "category": "Work",
-      "tags": "meeting,quarterly",
+      "tags": "meeting,project,q1",
       "createdAt": "2024-01-15T10:30:00.000Z",
       "updatedAt": "2024-01-15T10:30:00.000Z"
+    },
+    {
+      "_id": "507f1f77bcf86cd799439012",
+      "title": "Personal Goals",
+      "content": "Read 2 books this month and start exercising regularly",
+      "category": "Personal",
+      "tags": "goals,health",
+      "createdAt": "2024-01-14T15:45:00.000Z",
+      "updatedAt": "2024-01-14T15:45:00.000Z"
     }
-    // more notes...
   ]
 }
 ```
 
-Behavior: the controller uses skip = (page - 1) * limit with limit(Number(limit)) and skip(Number(skip)). If you have 25 notes with limit=10:
-- page=1 returns notes 1-10
-- page=2 returns notes 11-20
-- page=3 returns notes 21-25
+#### Full-Text Search
+```
+GET /note/search?search=<query>
+Authorization: Bearer <TOKEN>
+```
 
-#### Full-text Search (GET /api/note/search)
-Query params:
-- search (required) — search string applied with MongoDB full-text search across title and content.
+**Query Parameters:**
+- `search` (required) — Search string applied across title, content, category, and tags
 
-Examples:
+**Examples:**
 ```bash
 # Search for "project"
 curl -H "Authorization: Bearer <TOKEN>" \
-  "http://localhost:5000/api/note/search?search=project"
+  "http://localhost:5000/note/search?search=project"
 
-# Multi-word search (URL-encoded)
+# Search for "Q1"
 curl -H "Authorization: Bearer <TOKEN>" \
-  "http://localhost:5000/api/note/search?search=project%20kickoff"
+  "http://localhost:5000/note/search?search=Q1"
+
+# Search for "meeting goals"
+curl -H "Authorization: Bearer <TOKEN>" \
+  "http://localhost:5000/note/search?search=meeting%20goals"
 ```
 
-Sample response:
+**Response:**
 ```json
 {
   "message": "Notes fetched",
   "data": [
     {
-      "_id": "62f1f77bcf86cd799439012",
-      "title": "Project Kickoff",
-      "content": "Kickoff notes for the new project...",
+      "_id": "507f1f77bcf86cd799439011",
+      "title": "Project Meeting",
+      "content": "Discussed Q1 objectives and timeline for delivery",
       "category": "Work",
-      "tags": "project,kickoff",
-      "createdAt": "2024-01-13T09:15:00.000Z",
-      "updatedAt": "2024-01-13T09:15:00.000Z"
+      "tags": "meeting,project,q1",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
     }
   ]
 }
 ```
 
-Note: Search returns all matches found by the MongoDB $text query as implemented in the controller. If you want pagination on search results, you may add pagination logic to the search controller (e.g., .skip()/.limit()).
-
-#### Quick workflows
-
-Create → paginate → search:
-```bash
-# 1. Create
-curl -X POST -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Q1 Planning","content":"Quarterly planning and budget review","category":"Planning"}' \
-  http://localhost:5000/api/note
-
-# 2. List, first page (10 items)
-curl -H "Authorization: Bearer <TOKEN>" \
-  "http://localhost:5000/api/note?page=1&limit=10"
-
-# 3. Search for "Q1"
-curl -H "Authorization: Bearer <TOKEN>" \
-  "http://localhost:5000/api/note/search?search=Q1"
+#### Get Single Note
+```
+GET /note/:id
+Authorization: Bearer <TOKEN>
 ```
 
-## Testing the Setup
+#### Update Note
+```
+PUT /note/:id
+Content-Type: application/json
+Authorization: Bearer <TOKEN>
+```
 
-1. **Test the health endpoint:**
-   ```bash
-   curl http://localhost:5000/health
-   ```
+**Request:**
+```json
+{
+  "title": "Updated Project Meeting",
+  "content": "Updated content for the meeting",
+  "category": "Work",
+  "tags": "updated,project"
+}
+```
 
-2. **Expected response:**
-   ```json
-   {
-     "success": true,
-     "message": "Server is running",
-     "timestamp": "2024-01-01T12:00:00.000Z"
-   }
-   ```
+#### Delete Note
+```
+DELETE /note/:id
+Authorization: Bearer <TOKEN>
+```
 
-## Deployment to Render.com
+## Validation Rules
 
-### Steps:
+### Note Schema
+- **title**: Required, minimum 5 characters
+- **content**: Required, 10-250 characters
+- **category**: Optional, enum: "Work", "Personal", "Other" (default: "Other")
+- **tags**: Optional, comma-separated string
 
-1. **Push your code to GitHub** (make sure `.env` is in `.gitignore`)
+### User Schema
+- **name**: Required, minimum 2 characters
+- **email**: Required, valid email format, unique
+- **password**: Required, minimum 6 characters (recommended)
 
-2. **Create a new Web Service on Render**
-   - Go to [Render Dashboard](https://dashboard.render.com/)
-   - Click "New +" → "Web Service"
-   - Connect your GitHub repository
+## Deployment
 
-3. **Configure the service:**
-   - **Name**: notes-rest-api
-   - **Environment**: Node
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-
-4. **Add Environment Variables:**
-   - `MONGODB_URI`: Your MongoDB Atlas connection string
-   - `NODE_ENV`: production
-   - `PORT`: (leave empty, Render sets this automatically)
-
-5. **Deploy!**
-
-## Development Roadmap
-
-### Phase 1: Setup & Infrastructure (COMPLETE)
-- [x] Project initialization
-- [x] Dependencies installed
-- [x] Folder structure created
-- [x] Error handling middleware
-- [x] Database configuration
-- [x] Server bootstrap
-
-### Phase 2: Schema & Validation (NEXT)
-- [ ] Mongoose Note model
-- [ ] Joi validation schemas
-- [ ] Validation middleware integration
-
-### Phase 3: CRUD Endpoints
-- [ ] Create note
-- [ ] Get all notes
-- [ ] Get single note
-- [ ] Update note
-- [ ] Delete note
-
-### Phase 4: Advanced Features
-- [ ] Pagination
-- [ ] Sorting
-- [ ] Full-text search
-- [ ] Category filtering
-
-### Phase 5: Deployment
-- [ ] Render.com setup
-- [ ] Production testing
-- [ ] Documentation finalization
-
-## Contributing
-
-This is a learning project following production-ready best practices.
+Push to GitHub and deploy on Render.com:
+1. Create Web Service from GitHub repo
+2. Set build command: `npm install`
+3. Set start command: `npm start`
+4. Add environment variables: `MONGODB_URI`, `NODE_ENV=production`, `JWT_SECRET`
 
 ## License
 
 ISC
+
+© [Osborn Tulasi, Emmanuel Kuuku Dela Agyei, Ekwem Chidumaga Emmanuel, Feosi Chiki and Amos Ofori Ottei]

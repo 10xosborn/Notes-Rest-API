@@ -14,9 +14,9 @@ const router = express.Router();
 
 // Note routes
 router.post("/note", requireAuth, postNote);
+router.get("/note/search", requireAuth, getSearchNote);
 router.get("/note", requireAuth, getAllNote);
 router.get("/note/:id",requireAuth, getNoteById);
-router.get("/note", requireAuth, getSearchNote);
 router.put("/note/:id",requireAuth, updateNoteById);
 router.delete("/note/:id", requireAuth, deletetNoteById);
 

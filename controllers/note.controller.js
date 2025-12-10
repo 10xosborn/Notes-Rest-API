@@ -13,7 +13,7 @@ const postNote = async (req, res, next) => {
         tags : Joi.string().optional(),
     });
 
-     const { error, value } = noteSchema.validate(req.body);
+    const { error, value } = noteSchema.validate(req.body);
     if (error) {
         return res.status(400).json({ message: error.message });
     };
@@ -24,10 +24,7 @@ const postNote = async (req, res, next) => {
             return res.status(404).json({message : "Note cannot be created", error : error.message});
         };
 
-        if (newNote) {
-            return res.status(200).json({message : "Note created successfuly"});
-            Data : newNote;
-        };
+        return res.status(200).json({message : "Note created successfuly", data: newNote});
 
     } catch (error) {
         next (error);
@@ -40,16 +37,14 @@ const getAllNote = async (req, res, next) => {
     const skip = (page -1) * limit;
     try {
         const allNote = await noteModel.find()
-              
-        .sort({ createdAt: -1 })
+            .sort({ createdAt: -1 })
             .limit(Number(limit))
             .skip(Number(skip));
 
-            return res.status(200).json({
-      message: "Notes fetched",
-      data: allNote,
-  })
-
+        return res.status(200).json({
+            message: "Notes fetched",
+            data: allNote,
+        })
 
     } catch (error) {
         next (error);
@@ -61,15 +56,10 @@ const getNoteById = async (req, res, next) => {
     try {
         const singleNote = await noteModel.findById(req.params.id);
         if (!singleNote) {
-            return res.status(404).json({message : `Note ID : ${req.params.id} cannot be found`, error : error.message});
+            return res.status(404).json({message : `Note ID : ${req.params.id} cannot be found`});
         };
 
-        if (singleNote) {
-            return res.status(200).json({message : "A note is fetched",
-                data: singleNote,
-            });
-            
-        };
+        return res.status(200).json({message : "A note is fetched", data: singleNote});
 
     } catch (error) {
         next (error);
@@ -77,29 +67,26 @@ const getNoteById = async (req, res, next) => {
 };
 
 const getSearchNote = async (req, res, next) => {
-  const {search} = req.query
+    const {search} = req.query
 
-  try {
-    const searchNote = await ArticleModel.find({ $text: { $search: search } });
+    try {
+        const searchNote = await noteModel.find({ $text: { $search: search } });
 
-    return res.status(200).json({
-      message: "Notes fetched",
-      data: searchNote,
-  })
-  } catch (error) {
-   next(error);
-  }
+        return res.status(200).json({
+            message: "Notes fetched",
+            data: searchNote,
+        })
+    } catch (error) {
+        next(error);
+    }
 };
 
 // Update note
 const updateNoteById = async (req, res, next) => {
     const {error,value} = Joi.object({
         title : Joi.string().required().min(5).trim(),
-
         content : Joi.string().required().min(10).max(250),
-
         category : Joi.string().optional(),
-
         tags : Joi.string().optional(),
     }).validate(req.body);
 
@@ -108,31 +95,27 @@ const updateNoteById = async (req, res, next) => {
         const updateNote = await noteModel.findByIdAndUpdate(
             req.params.id,
             { ...value }, 
-    { 
-      new: true, 
-      runValidators: true,
-    }
-    );
+            { 
+                new: true, 
+                runValidators: true,
+            }
+        );
         if (updateNote) {
-            return res.status(200).json({message : "Note has been updated",  
-                Data : updateNote, 
-            });
-          
+            return res.status(200).json({message : "Note has been updated", data : updateNote});
         };
 
     } catch (error) {
         next (error);
     }
 };
+
 const deletetNoteById = async (req, res, next) => {
     try {
         const deleteNote = await noteModel.findByIdAndDelete(req.params.id);
-         if (!deleteNote) {
-            return res.status(404).json({message : "Note cannoy be deleted", error : error.message});
+        if (!deleteNote) {
+            return res.status(404).json({message : "Note cannot be deleted"});
         };
-        if (deleteNote) {
-            return res.status(200).json({message : "You have successfully deleted the note"});
-        };
+        return res.status(200).json({message : "You have successfully deleted the note"});
 
     } catch (error) {
         next (error);
