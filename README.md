@@ -1,8 +1,8 @@
 # Notes REST API
 
-Production-ready Notes REST API built with Node.js, Express, MongoDB Atlas, and Mongoose.
+A production-ready REST API for managing notes with user authentication, built with Node.js, Express, and MongoDB.
 
-## 🚀 Features
+## Features
 
 - ✅ Create, Read, Update, Delete notes
 - ✅ Pagination and sorting
@@ -21,7 +21,7 @@ Production-ready Notes REST API built with Node.js, Express, MongoDB Atlas, and 
 - **Logging**: Morgan
 - **Environment**: dotenv
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 NOTES REST API/
@@ -42,17 +42,15 @@ NOTES REST API/
 │   │   └── note.validation.js    # Joi schemas
 │   ├── utils/
 │   │   └── ApiError.js           # Custom error class
-│   ├── app.js                    # Express app setup
-│   └── server.js                 # Server bootstrap
+│   └──app.js                     # Express app setup and server bootstrap
 │
 ├── .env                          # Environment variables (create this!)
-├── .env.example                  # Environment template
 ├── .gitignore
 ├── package.json
 └── README.md
 ```
 
-## 🔧 Installation
+## Installation
 
 ### Prerequisites
 
@@ -102,7 +100,7 @@ NOTES REST API/
    npm start
    ```
 
-## 📝 API Endpoints
+## API Endpoints
 
 ### Health Check
 ```
@@ -118,17 +116,113 @@ GET /health
 }
 ```
 
-### Notes Endpoints (Coming in Phase 2-4)
+### Notes Endpoints (examples for search & pagination)
 
-```
-POST   /api/notes          # Create a note
-GET    /api/notes          # Get all notes (with pagination, search, filter)
-GET    /api/notes/:id      # Get a single note
-PUT    /api/notes/:id      # Update a note
-DELETE /api/notes/:id      # Delete a note
+Base route (requires Authorization header, middleware: requireAuth):
+- POST   /api/note          # Create a note
+- GET    /api/note          # Get all notes (supports pagination)
+- GET    /api/note/search   # Full-text search across title and content
+- GET    /api/note/:id      # Get a single note
+- PUT    /api/note/:id      # Update a note
+- DELETE /api/note/:id      # Delete a note
+
+Note: the controller sorts results by createdAt descending (newest first).
+
+#### Pagination (GET /api/note)
+Query params:
+- page (optional, default: 1) — page number
+- limit (optional, default: 10) — number of items per page
+
+Examples:
+```bash
+# Default (page 1, 10 items)
+curl -H "Authorization: Bearer <TOKEN>" \
+  http://localhost:5000/api/note
+
+# Page 2, 5 items per page
+curl -H "Authorization: Bearer <TOKEN>" \
+  "http://localhost:5000/api/note?page=2&limit=5"
 ```
 
-## 🧪 Testing the Setup
+Sample response:
+```json
+{
+  "message": "Notes fetched",
+  "data": [
+    {
+      "_id": "62f1f77bcf86cd799439011",
+      "title": "Meeting Notes",
+      "content": "Discussed quarterly objectives...",
+      "category": "Work",
+      "tags": "meeting,quarterly",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+    // more notes...
+  ]
+}
+```
+
+Behavior: the controller uses skip = (page - 1) * limit with limit(Number(limit)) and skip(Number(skip)). If you have 25 notes with limit=10:
+- page=1 returns notes 1-10
+- page=2 returns notes 11-20
+- page=3 returns notes 21-25
+
+#### Full-text Search (GET /api/note/search)
+Query params:
+- search (required) — search string applied with MongoDB full-text search across title and content.
+
+Examples:
+```bash
+# Search for "project"
+curl -H "Authorization: Bearer <TOKEN>" \
+  "http://localhost:5000/api/note/search?search=project"
+
+# Multi-word search (URL-encoded)
+curl -H "Authorization: Bearer <TOKEN>" \
+  "http://localhost:5000/api/note/search?search=project%20kickoff"
+```
+
+Sample response:
+```json
+{
+  "message": "Notes fetched",
+  "data": [
+    {
+      "_id": "62f1f77bcf86cd799439012",
+      "title": "Project Kickoff",
+      "content": "Kickoff notes for the new project...",
+      "category": "Work",
+      "tags": "project,kickoff",
+      "createdAt": "2024-01-13T09:15:00.000Z",
+      "updatedAt": "2024-01-13T09:15:00.000Z"
+    }
+  ]
+}
+```
+
+Note: Search returns all matches found by the MongoDB $text query as implemented in the controller. If you want pagination on search results, you may add pagination logic to the search controller (e.g., .skip()/.limit()).
+
+#### Quick workflows
+
+Create → paginate → search:
+```bash
+# 1. Create
+curl -X POST -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Q1 Planning","content":"Quarterly planning and budget review","category":"Planning"}' \
+  http://localhost:5000/api/note
+
+# 2. List, first page (10 items)
+curl -H "Authorization: Bearer <TOKEN>" \
+  "http://localhost:5000/api/note?page=1&limit=10"
+
+# 3. Search for "Q1"
+curl -H "Authorization: Bearer <TOKEN>" \
+  "http://localhost:5000/api/note/search?search=Q1"
+```
+
+## Testing the Setup
 
 1. **Test the health endpoint:**
    ```bash
@@ -144,7 +238,7 @@ DELETE /api/notes/:id      # Delete a note
    }
    ```
 
-## 🚢 Deployment to Render.com
+## Deployment to Render.com
 
 ### Steps:
 
@@ -168,9 +262,9 @@ DELETE /api/notes/:id      # Delete a note
 
 5. **Deploy!**
 
-## 📚 Development Roadmap
+## Development Roadmap
 
-### ✅ Phase 1: Setup & Infrastructure (COMPLETE)
+### Phase 1: Setup & Infrastructure (COMPLETE)
 - [x] Project initialization
 - [x] Dependencies installed
 - [x] Folder structure created
@@ -178,33 +272,33 @@ DELETE /api/notes/:id      # Delete a note
 - [x] Database configuration
 - [x] Server bootstrap
 
-### 🔄 Phase 2: Schema & Validation (NEXT)
+### Phase 2: Schema & Validation (NEXT)
 - [ ] Mongoose Note model
 - [ ] Joi validation schemas
 - [ ] Validation middleware integration
 
-### 🔄 Phase 3: CRUD Endpoints
+### Phase 3: CRUD Endpoints
 - [ ] Create note
 - [ ] Get all notes
 - [ ] Get single note
 - [ ] Update note
 - [ ] Delete note
 
-### 🔄 Phase 4: Advanced Features
+### Phase 4: Advanced Features
 - [ ] Pagination
 - [ ] Sorting
 - [ ] Full-text search
 - [ ] Category filtering
 
-### 🔄 Phase 5: Deployment
+### Phase 5: Deployment
 - [ ] Render.com setup
 - [ ] Production testing
 - [ ] Documentation finalization
 
-## 🤝 Contributing
+## Contributing
 
 This is a learning project following production-ready best practices.
 
-## 📄 License
+## License
 
 ISC
