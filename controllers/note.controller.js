@@ -111,7 +111,10 @@ const updateNoteById = async (req, res, next) => {
 
 const deletetNoteById = async (req, res, next) => {
     try {
-        const deleteNote = await noteModel.findByIdAndDelete(req.params.id);
+        const deleteNote = await noteModel.findOneAndDelete({
+            _id: req.params._id,
+            author: req.user.id,
+        });
         if (!deleteNote) {
             return res.status(404).json({message : "Note cannot be deleted"});
         };
